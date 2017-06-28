@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <title>Roundabout</title>
+    <script type="text/javascript">
+      // Roundabout
+      // https://github.com/stut/roundabout
+
+      // Reload the entire page after this many seconds. This will pick up
+      // any changes made to this file or in the displayed URLs that
+      // aren't updated via AJAX.
+      var reload_period = 300;
+
+      // One entry per URL to show. Each entry consists of the number of
+      // seconds to show that URL for and the URL itself.
+      var urls = [
+        [30, 'http://127.0.0.1:3000/dashboard/db/page1?from=now-24h&to=now&refresh=10s&kiosk'],
+        [10, 'http://127.0.0.1:3000/dashboard/db/page2?from=now-24h&to=now&refresh=10s&kiosk'],
+        [20, 'http://127.0.0.1:3000/dashboard/db/page3?from=now-24h&to=now&refresh=10s&kiosk'],
+      ];
+
+      // No configuration needed beyond this point.
+    </script>
+    <style>
+      html, body {
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+      iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        visibility: hidden;
+        margin: 0;
+        padding: 0;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      var refresh_period = reload_period * 1000;
+      var start_ts = (new Date()).getTime();
+
+      for (var idx = 0; idx < urls.length; idx++) {
+        document.write('<iframe id="frame' + idx + '" data-delay="' + urls[idx][0] + '" src="' + urls[idx][1] + '" seamless></iframe>');
+      }
+
+      function getFrame(num) {
+        return document.getElementById('frame' + num);
+      }
+
+      function next(current) {
+        if (((new Date()).getTime() - start_ts) > refresh_period) {
+          location.reload();
+        } else {
+          var frame = getFrame(current);
+          if (frame) {
+            frame.style.visibility = 'hidden';
+          }
+          current += 1;
+          frame = getFrame(current);
+          if (!frame) {
+            current = 0;
+            frame = getFrame(current);
+          }
+          frame.style.visibility = 'visible';
+          time = frame.getAttribute('data-delay');
+          setTimeout(function() { next(current); }, time * 1000);
+        }
+      }
+
+      next(-1);
+    </script>
+  </body>
+</html>
