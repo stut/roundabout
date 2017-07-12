@@ -4,11 +4,12 @@
     <script type="text/javascript">
       // Roundabout
       // https://github.com/stut/roundabout
-
+      
       // Reload the entire page after this many seconds. This will pick up
       // any changes made to this file or in the displayed URLs that
-      // aren't updated via AJAX.
-      var reload_period = 300;
+      // aren't updated via AJAX. It also causes the page to go blank while
+      // it's reloading.
+      var reload_period = 3600;
 
       // One entry per URL to show. Each entry consists of the number of
       // seconds to show that URL for and the URL itself.
@@ -18,11 +19,15 @@
         [20, 'http://127.0.0.1:3000/dashboard/db/page3?from=now-24h&to=now&refresh=10s&kiosk'],
       ];
 
+      // Set this to true to log what's happening to the console.
+      var DEBUG = false;
+
       // No configuration needed beyond this point.
     </script>
     <style>
       html, body {
         border: none;
+
         margin: 0;
         padding: 0;
       }
@@ -43,36 +48,73 @@
   </head>
   <body>
     <script type="text/javascript">
-      var refresh_period = reload_period * 1000;
-      var start_ts = (new Date()).getTime();
+      var getTimestamp = function() {
+        return (new Date()).getTime();
+      }
 
+      var getFrame = function(num) {
+        return document.getElementById('frame' + num);
+      }
+
+      reload_period *= 1000;
+      if (DEBUG) console.log('Reload period: ' + reload_period);
+      var reload_start_ts = getTimestamp();
+      var reload_frames_start_ts = getTimestamp();
+      var timer = undefined;
+      var halted = false;
+
+      if (DEBUG) console.log('Creating frames...');
       for (var idx = 0; idx < urls.length; idx++) {
         document.write('<iframe id="frame' + idx + '" data-delay="' + urls[idx][0] + '" src="' + urls[idx][1] + '" seamless></iframe>');
       }
 
-      function getFrame(num) {
-        return document.getElementById('frame' + num);
+      var next = function(current) {
+        if (DEBUG) console.log('Entering next(' + current + ')...');
+        if (!halted) {
+          var ts = getTimestamp();
+          if (ts - reload_start_ts > reload_period) {
+            if (DEBUG) console.log('Reloading page...');
+            location.reload();
+            return;
+          }
+        }
+
+        var frame = getFrame(current);
+        if (frame) {
+          if (DEBUG) console.log('Hiding current frame...');
+          frame.style.visibility = 'hidden';
+        }
+        current += 1;
+        frame = getFrame(current);
+        if (!frame) {
+          current = 0;
+          frame = getFrame(current);
+        }
+        if (DEBUG) console.log('Showing frame ' + current + '...');
+        frame.style.visibility = 'visible';
+        time = frame.getAttribute('data-delay');
+        if (!halted && time > 0) {
+          if (DEBUG) console.log('Setting next timer for ' + time + ' seconds...');
+          timer = setTimeout(function() { next(current); }, time * 1000);
+        }
+        if (DEBUG) console.log('Leaving next()');
       }
 
-      function next(current) {
-        if (((new Date()).getTime() - start_ts) > refresh_period) {
-          location.reload();
-        } else {
-          var frame = getFrame(current);
-          if (frame) {
-            frame.style.visibility = 'hidden';
-          }
-          current += 1;
-          frame = getFrame(current);
-          if (!frame) {
-            current = 0;
-            frame = getFrame(current);
-          }
-          frame.style.visibility = 'visible';
-          time = frame.getAttribute('data-delay');
-          setTimeout(function() { next(current); }, time * 1000);
+      document.onkeydown = function(evt) {
+        if (DEBUG) console.log('Key pressed: ' + evt.keyCode);
+        if (timer) {
+          if (DEBUG) console.log('Clearing timer...');
+          clearTimeout(timer);
+          timer = undefined;
         }
-      }
+        if (DEBUG) console.log('Halting cycle...');
+        halted = true;
+        if (DEBUG) console.log('Hiding all frames...');
+        for (var idx = 0; idx < urls.length; idx++) {
+          getFrame(idx).style.visibility = 'hidden';
+        }
+        next(evt.keyCode-50);
+      };
 
       next(-1);
     </script>

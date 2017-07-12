@@ -22,6 +22,9 @@ run into security restrictions when loading from the local filesystem.
 The page is self-updating so there's no need to manually reload the page if
 you changed any of the configuration variables.
 
+You can press the 1-9 keys to switch between pages. This will stop the timer
+that's automatically cycling around them; reload the page to start it again.
+
 KISS it
 -------
 
